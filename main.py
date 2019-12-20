@@ -1,8 +1,3 @@
-"""
- @Date    : 2019/12/20
- @Author  : Hao Dingkui (dkhao@ir.hit.edu.cn)
- @File    : main.py
-"""
 import requests
 import jieba
 import time
@@ -33,7 +28,7 @@ if __name__ == "__main__":
             'apiKey=786a622dd39f434ab9cbf00dc9a4f68d')
     response = requests.get(url)
     articles = response.json()['articles']、
-    
+
     for news in articles:
         title = news['title']
         title = strip_title(title)
