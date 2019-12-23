@@ -1,9 +1,11 @@
+from flask import Flask, escape, request
 import requests
 import jieba
 import time
 import json
 from ner_client import BertClient
 
+app = Flask(__name__)
 
 def get_named_entities(sentence):
     """识别句子中的命名实体"""
@@ -43,9 +45,26 @@ def get_semantic_role_labels(sentence):
     # text = "提醒/我/三点/去/东门/拿/快递/。"
     param = {'sentence':sentence}
     response = requests.post(url, data=param)
-    result_list = json.loads(response.text)
+    srl_result_list = json.loads(response.text)
+    result_list = extract_arguments_from_srl_result(srl_result_list)
     return result_list
-    
+
+def extract_arguments_from_srl_result(srl_result_list):
+    result_list = []
+    for srl_result in srl_result_list:
+        result_dict = {}
+        tag_list = srl_result[0]
+        word_list = srl_result[1]
+        for tag in tag_list:
+            if tag != "O":
+                tag_index = tag_list.index(tag)
+                if tag not in result_dict.keys():
+                    result_dict[tag] = []
+                result_dict[tag].append(word_list[tag_index])
+        result_list.append(result_dict)
+    return result_list
+
+
 def strip_title(title):
     """去掉新闻标题的来源等杂项信息"""
     if "-" in title:
@@ -57,16 +76,22 @@ def strip_title(title):
     title = title.replace(" ","")
     return title
 
-if __name__ == "__main__":
+@app.route('/')
+def show_top_headlines():
+    # name = request.args.get("name", "World")
     url = ('https://newsapi.org/v2/top-headlines?'
             'country=cn&'
             'apiKey=786a622dd39f434ab9cbf00dc9a4f68d')
     response = requests.get(url)
     articles = response.json()['articles']
-
+    result_str = ""
     for news in articles:
         title = news['title']
+        time = news['publishedAt']
         title = strip_title(title)
-        print(title)
-        print(get_semantic_role_labels(title))
-        print(get_named_entities(title))
+
+        result_str += title + "&nbsp;&nbsp;&nbsp;" + time + "\n<br>"
+        result_str += str(get_semantic_role_labels(title)) + '\n<br>'
+        result_str += str(get_named_entities(title)) + '\n<br>'
+
+    return result_str
