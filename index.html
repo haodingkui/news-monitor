@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<title>时事新闻分析</title>
+		<script src="js/jquery-1.11.1.min.js"></script>
+		<script src="js/echarts.min.js"></script>
+		<script src="js/china.js"></script>
+	</head>
+	<body style="background-color: #DCDCDC">
+		<div id="container" style="height: 500px;width:1200px;background:white;margin:20px 0 0 340px;box-shadow:0 0 20px rgba(0, 0, 0, 0.3);"></div>
+		<br>
+		<b style="text-align: center; margin-left: 45%; margin-top: 100px; font-size: 42px;">实时滚动新闻</b>
+		<div id="all_news" style="margin-left: 50px; margin-top: 40px;">
+			<div style="background-color:white; width: 250px; height:330px; float: left; margin-right: 50px; margin-bottom: 30px; box-shadow:0 0 20px rgba(0, 0, 0, 0.3);" id="div-0" >
+				<div style="height: 128px; border-bottom:1px solid #000">
+					<img src="1.png" style="height: 128px;width: 250px;">
+				</div>
+				<div style="height: 180px; border-bottom:3px dashed blue; width: 208px; padding: 10px 20px 10px 20px;">
+					<span style="font-size:14px; color: #b6b8c4; font-family: "times new roman"; left: 115px;">EVENT</span>
+					<div id="title" style="font-size: 17px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-weight: 500; font-family: 华文中宋;">国足1：0憾负韩国</div>
+					<span style="font-size:14px; color: #b6b8c4; font-family: "times new roman"; left: 115px;">WHO</span>
+					<div id="people" style="font-size: 17px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-weight: 500; font-family: 华文中宋;">张禹</div>
+					<span style="font-size:14px; color: #b6b8c4; font-family: "times new roman"; left: 115px;">WHERE</span>
+					<div id="place" style="font-size: 17px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-weight: 500; font-family: 华文中宋;">黑龙江省哈尔滨市</div>
+					<span style="color: gray; font-family: "times new roman"; font-family: "times new roman";>2019-12-23 10:23:22</span>
+				</div>				
+			</div>
+		</div>
+		
+		<script type="text/javascript">
+			var result = ""
+			$.ajax({
+				type: 'POST',
+				url: "http://127.0.0.1:5000/events",
+				success: function(response) {
+					// console.log(response);
+					result = jQuery.parseJSON(response);
+					// console.log(parsedJson[0].title)
+					// clonedNode.children[1].children[1].innerHTML = parsedJson[counts-1].title;
+				}
+			});
+
+			var counts = 0; //新闻总数
+			var time = window.setInterval(function add(title, people, place, time){
+				var sourceNode = document.getElementById("div-0"); // 获得被克隆的节点对象 
+				var clonedNode = sourceNode.cloneNode(true); 
+				counts += 1;
+				if(counts<16){
+				clonedNode.id = 'div-'+counts;
+				
+				sourceNode.parentNode.appendChild(clonedNode);
+				clonedNode.children[0].children[0].src = 'file:///C:/Users/haodingkui/Documents/GitHub/news-monitor/img/'+counts+'.png';
+				clonedNode.children[1].children[1].innerHTML = result[counts-1].title;
+				clonedNode.children[1].children[3].innerHTML = result[counts-1].person;
+				clonedNode.children[1].children[5].innerHTML = result[counts-1].location;	
+				clonedNode.children[1].children[6].innerHTML = result[counts-1].time;
+				map(result[counts-1].location);
+				// if (counts == result.length){
+				// 	clearInterval(add())
+				// }	
+				
+			}
+			}, 2000);
+			var specialMap = [];
+			function map(a){
+				specialMap.push(a);
+				// 对dataMap进行处理，使其可以直接在页面上展示
+				for (var i = 0; i < specialMap.length; i++) {
+				    for (var j = 0; j < dataMap.length; j++) {
+				        if (specialMap[i] == dataMap[j].name) {
+				            dataMap[j].selected = true;
+				            break;
+				        }		
+				    }
+				}
+				var myChart = echarts.init(document.getElementById('container'));
+				//使用制定的配置项和数据显示图表
+				myChart.setOption(option);
+			}
+		
+		
+		    // 全国省份列表
+		    var dataMap = [{ name: '北京' }, { name: '天津' }, { name: '上海' }, { name: '重庆' }, { name: '河北' }, { name: '河南' }, { name: '云南' }, { name: '辽宁' }, { name: '黑龙江' }, { name: '湖南' }, { name: '安徽' }, { name: '山东' },
+		    { name: '新疆' }, { name: '江苏' }, { name: '浙江' }, { name: '江西' }, { name: '湖北' }, { name: '广西' }, { name: '甘肃' }, { name: '山西' }, { name: '内蒙古' }, { name: '陕西' }, { name: '吉林' }, { name: '福建' }, { name: '贵州' },
+		    { name: '广东' }, { name: '青海' }, { name: '西藏' }, { name: '四川' }, { name: '宁夏' }, { name: '海南' }, { name: '台湾' }, { name: '香港' }, { name: '澳门' }]
+		    // 需要在页面上直接标记出来的城市
+		    
+		    
+		    // 绘制图表，准备数据
+		    var option = {
+		        tooltip: {
+		            formatter: function (params) {
+		                var info = '<p style="font-size:18px">' + params.name //+ '</p><p style="font-size:14px">这里可以写一些，想展示在页面上的别的信息</p>'
+		                return info;
+		            },
+		            backgroundColor: "#ff7f50",//提示标签背景颜色
+		            textStyle: { color: "#fff" } //提示标签字体颜色
+		        },
+		        series: [
+		            {
+		                name: '中国',
+		                type: 'map',
+						mapType: 'china',
+						zoom: 2, //当前视角的缩放比例
+						roam: true, //是否开启平游或缩放
+						scaleLimit: { //滚轮缩放的极限控制
+						min: 1,
+						max: 20
+						},
+		                selectedMode: 'multiple',
+		                label: {
+		                    normal: {
+		                        show: false,//显示省份标签
+		                        // textStyle:{color:"#c71585"}//省份标签字体颜色
+		                    },
+		                    emphasis: {
+		                        show: true,//对应的鼠标悬浮效果
+		                        // textStyle:{color:"#800080"}
+		                    }
+		                },
+		                itemStyle: {
+		                    normal: {
+		                        borderWidth: .5,//区域边框宽度
+		                        // borderColor: '#009fe8',//区域边框颜色
+		                        // areaColor:"#ffefd5",//区域颜色
+		                    },
+		                    emphasis: {
+		                        borderWidth: .5,
+		                        borderColor: '#4b0082',
+		                        areaColor: "#ffdead",
+		                    }
+		                },
+		                data: dataMap
+		            }
+		        ]
+		    };
+		    //初始化echarts实例
+		    var myChart = echarts.init(document.getElementById('container'));
+		    //使用制定的配置项和数据显示图表
+		    myChart.setOption(option);
+		</script>
+	</body>
+</html>

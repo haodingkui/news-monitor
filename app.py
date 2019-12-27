@@ -1,11 +1,14 @@
-from flask import Flask, escape, request
+from flask import Flask, escape, request, redirect
+from flask_cors import CORS
 import requests
 import jieba
 import time
 import json
 from ner_client import BertClient
+import csv
 
 app = Flask(__name__)
+CORS(app)
 
 def get_named_entities(sentence):
     """识别句子中的命名实体"""
@@ -34,7 +37,8 @@ def extract_entities_from_ner_result(sentence, tag_list):
             tag = tag[2:5]
             if tag not in result_dict.keys():
                 result_dict[tag] = []
-            result_dict[tag].append(sentence[tag_index:end_index+1])
+            if sentence[tag_index:end_index+1] not in result_dict[tag]:
+                result_dict[tag].append(sentence[tag_index:end_index+1])
     return result_dict
 
 def get_semantic_role_labels(sentence):
@@ -64,7 +68,6 @@ def extract_arguments_from_srl_result(srl_result_list):
         result_list.append(result_dict)
     return result_list
 
-
 def strip_title(title):
     """去掉新闻标题的来源等杂项信息"""
     if "-" in title:
@@ -77,21 +80,31 @@ def strip_title(title):
     return title
 
 @app.route('/')
-def show_top_headlines():
-    # name = request.args.get("name", "World")
-    url = ('https://newsapi.org/v2/top-headlines?'
-            'country=cn&'
-            'apiKey=786a622dd39f434ab9cbf00dc9a4f68d')
-    response = requests.get(url)
-    articles = response.json()['articles']
-    result_str = ""
-    for news in articles:
-        title = news['title']
-        time = news['publishedAt']
-        title = strip_title(title)
+def root():
+    return redirect('/events')
 
-        result_str += title + "&nbsp;&nbsp;&nbsp;" + time + "\n<br>"
-        result_str += str(get_semantic_role_labels(title)) + '\n<br>'
-        result_str += str(get_named_entities(title)) + '\n<br>'
+@app.route('/events/', methods=['GET', 'POST'])
+def get_events_info():
+    # 读取csv至字典
+    csv_file = open("processed_data.csv", "r")
+    reader = csv.reader(csv_file)
+    result_list = []
+    index = 0
+    for line in reader:
+        if index == 0:
+            index += 1
+            continue
+        result_dict = {}
+        # l = line.strip().split(",")
+        result_dict['title'] = line[0]
+        result_dict['url'] = line[1]
+        result_dict['time'] = line[2]
+        result_dict['ner'] = json.loads(line[3].replace("'", '"'))
+        if "PER" in result_dict['ner'].keys():
+            result_dict['person'] = result_dict['ner']['PER']
+        if "LOC" in result_dict['ner'].keys():
+            result_dict['location'] = result_dict['ner']['LOC']
+        
+        result_list.append(result_dict)
 
-    return result_str
+    return json.dumps(result_list)
