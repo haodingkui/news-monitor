@@ -1,1 +1,1 @@
-# news-monitor
+# News Monitor
